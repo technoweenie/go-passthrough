@@ -6,15 +6,15 @@ import (
 	"strconv"
 )
 
-type client struct {
+type Client struct {
 	Headers []string
 }
 
-func New(headers []string) *client {
-	return &client{headers}
+func New(headers []string) *Client {
+	return &Client{headers}
 }
 
-func (c *client) Pass(res *http.Response, w http.ResponseWriter, status int) {
+func (c *Client) Pass(res *http.Response, w http.ResponseWriter, status int) {
 	head := c.PassHeaders(res.Header, w)
 	head.Set("Content-Length", strconv.Itoa(int(res.ContentLength)))
 	w.WriteHeader(status)
@@ -22,7 +22,7 @@ func (c *client) Pass(res *http.Response, w http.ResponseWriter, status int) {
 	res.Body.Close()
 }
 
-func (c *client) PassHeaders(resHeader http.Header, w http.ResponseWriter) http.Header {
+func (c *Client) PassHeaders(resHeader http.Header, w http.ResponseWriter) http.Header {
 	head := w.Header()
 	for _, header := range c.Headers {
 		if value := resHeader.Get(header); len(value) != 0 {
