@@ -13,7 +13,7 @@ func TestPassHeaders(t *testing.T) {
 
 	res, w := Get(srv)
 
-	p := New([]string{"Content-Type"})
+	p := New("Content-Type")
 	p.PassHeaders(res.Header, w)
 
 	head := w.Header()
@@ -36,7 +36,7 @@ func TestPass(t *testing.T) {
 
 	res, w := Get(srv)
 
-	p := New([]string{"Content-Type"})
+	p := New("Content-Type")
 	p.Pass(res, w, 200)
 
 	if w.Status != 200 {
