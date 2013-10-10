@@ -10,7 +10,7 @@ type Client struct {
 	Headers []string
 }
 
-func New(headers []string) *Client {
+func New(headers ...string) *Client {
 	return &Client{headers}
 }
 
