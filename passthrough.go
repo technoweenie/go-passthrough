@@ -16,7 +16,14 @@ func New(headers []string) *Client {
 
 func (c *Client) Pass(res *http.Response, w http.ResponseWriter, status int) {
 	head := c.PassHeaders(res.Header, w)
-	head.Set("Content-Length", strconv.Itoa(int(res.ContentLength)))
+	cl := int(res.ContentLength)
+	if cl == -1 {
+		for _, te := range res.TransferEncoding {
+			head.Add("Transfer-Encoding", te)
+		}
+	} else {
+		head.Set("Content-Length", strconv.Itoa(cl))
+	}
 	w.WriteHeader(status)
 	io.Copy(w, res.Body)
 	res.Body.Close()
