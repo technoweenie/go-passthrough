@@ -61,9 +61,45 @@ func TestPass(t *testing.T) {
 	}
 }
 
+func TestPassWithTransferEncoding(t *testing.T) {
+	srv := SetupTest()
+	defer srv.Close()
+
+	res, w := GetWithTransferEncoding(srv)
+
+	p := New([]string{"Content-Type"})
+	p.Pass(res, w, 200)
+
+	if w.Status != 200 {
+		t.Errorf("Invalid status: %d", w.Status)
+	}
+
+	head := w.Header()
+	if value := head.Get("Content-Type"); value != "text/plain" {
+		t.Errorf("Invalid Content Type: %s", value)
+	}
+
+	if value := head.Get("Content-Length"); value != "" {
+		t.Errorf("Passed Content-Length through: %s", value)
+	}
+
+	if value := head.Get("Transfer-Encoding"); value != "chunked" {
+		t.Errorf("Invalid Transfer Encoding: %s", value)
+	}
+
+	if body := w.BodyString(); body != "ok" {
+		t.Errorf("Invalid body: %s", body)
+	}
+
+	if _, ok := head["ETag"]; ok {
+		t.Errorf("Passed ETag through: %s", head.Get("ETag"))
+	}
+}
+
 func SetupTest() *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/example", exampleRequest)
+	mux.HandleFunc("/example2", exampleRequest2)
 	return httptest.NewServer(mux)
 }
 
@@ -76,8 +112,26 @@ func exampleRequest(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
+func exampleRequest2(w http.ResponseWriter, r *http.Request) {
+	head := w.Header()
+	head.Set("ETag", `"abc"`)
+	head.Set("Content-Type", "text/plain")
+	head.Set("Content-Length", "-1")
+	w.WriteHeader(200)
+	w.Write([]byte("ok"))
+}
+
 func Get(srv *httptest.Server) (*http.Response, *FakeResponseWriter) {
 	res, err := http.Get(srv.URL + "/example")
+	if err != nil {
+		panic(err)
+	}
+
+	return res, &FakeResponseWriter{new(bytes.Buffer), make(http.Header), 0}
+}
+
+func GetWithTransferEncoding(srv *httptest.Server) (*http.Response, *FakeResponseWriter) {
+	res, err := http.Get(srv.URL + "/example2")
 	if err != nil {
 		panic(err)
 	}
